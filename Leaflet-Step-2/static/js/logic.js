@@ -15,8 +15,7 @@ function getColor(d) {
 }
 
 // Function to attach tooltips and circles
-function createFeatures(earthquakeData) {
-
+function createFeatures(earthquakeData, faultData) {
     // Define a function we want to run once for each feature in the features array
     // Give each feature a popup describing the place and time of the earthquake
     function onEachFeature(feature, layer) {
@@ -34,15 +33,31 @@ function createFeatures(earthquakeData) {
                 fillColor: getColor(feature.properties.mag),
                 weight: 0.5,
             });
+
         },
+
         onEachFeature: onEachFeature
     });
+
+    const fault = L.geoJSON(faultData, {
+        pointToLayer: function (feature, latlng) {
+            return new L.polyline(latlng, { color: 'red' });
+        },
+
+        onEachFeature: onEachFeature
+    });
+
+
     // Sending our earthquakes layer to the createMap function
-    createMap(earthquakes);
+    createMap(earthquakes, fault);
 }
 
 
-function createMap(earthquakes) {
+
+
+
+
+function createMap(earthquakes, fault) {
 
     // Define streetmap 
     const streetmap = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
@@ -73,17 +88,23 @@ function createMap(earthquakes) {
         "Outdoors": outdoorsmap
     };
 
-    // Create overlay object to hold our overlay layer
-    const overlayMaps = {
-        Earthquakes: earthquakes
-    };
     // Create our map, giving it the streetmap and earthquakes layers to display on load
     const myMap = L.map("map", {
         center: [37.09, -95.71],
         zoom: 5,
         layers: [streetmap, earthquakes]
     });
- 
+
+
+
+
+    // Create overlay object to hold our overlay layer
+    const overlayMaps = {
+        Earthquakes: earthquakes,
+        Fault: fault
+    };
+
+
     // Create a layer control
     // Pass in our baseMaps and overlayMaps
     // Add the layer control to the map
@@ -107,14 +128,19 @@ function createMap(earthquakes) {
     };
 
     legend.addTo(myMap);
+
+
 }
 
 // Async function to load the dataset
 (async function () {
     const url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson'
+    const faulturl = "https://raw.githubusercontent.com/busy0312/W17_Mapping-Web/master/Leaflet-Step-2/tectonicplates-master/GeoJSON/PB2002_plates.json"
     const data = await d3.json(url);
+    const faultdata = await d3.json(faulturl);
     // Once we get a response, send the data.features object to the createFeatures function
-    createFeatures(data.features);
+    createFeatures(data.features, faultdata.features);
+
 })()
 
 
